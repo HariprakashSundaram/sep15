@@ -278,7 +278,7 @@
                 <input type="file" id="jtlFile" accept=".jtl,.csv" onchange="handleFileUpload(event)">
             </div>
             
-            
+            <button class="export-btn" onclick="exportToPDF()">Export to PDF</button>
             <button class="export-btn" onclick="exportToImage()">Export to Image</button>
         </div>
     </header>
@@ -2962,7 +2962,64 @@
         function updateFileLabel(filename) {
             document.getElementById('fileInputLabel').textContent = filename;
         }
+        function exportToPDF() {
+    // Store original table styles
+    const tableWrappers = document.querySelectorAll('.table-wrapper');
+    const originalStyles = [];
 
+    // Temporarily remove height limits and scrolling from tables
+    tableWrappers.forEach((wrapper, index) => {
+        originalStyles[index] = {
+            maxHeight: wrapper.style.maxHeight,
+            overflow: wrapper.style.overflow,
+            height: wrapper.style.height
+        };
+        wrapper.style.maxHeight = 'none';
+        wrapper.style.overflow = 'visible';
+        wrapper.style.height = 'auto';
+    });
+
+    setTimeout(() => {
+        const dashboardContainer = document.body;
+
+        html2canvas(dashboardContainer, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: dashboardContainer.scrollWidth,
+            windowHeight: dashboardContainer.scrollHeight,
+            backgroundColor: '#ffffff'
+        }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png', 1.0);
+            const pdf = new window.jspdf.jsPDF({
+                orientation: 'portrait',
+                unit: 'px',
+                format: [canvas.width, canvas.height]
+            });
+            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+            pdf.save(`jmeter-dashboard-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`);
+
+            // Restore original table styles
+            tableWrappers.forEach((wrapper, index) => {
+                const original = originalStyles[index];
+                wrapper.style.maxHeight = original.maxHeight;
+                wrapper.style.overflow = original.overflow;
+                wrapper.style.height = original.height;
+            });
+        }).catch(error => {
+            console.error('Error generating PDF:', error);
+            alert('Error generating PDF. Please try again.');
+            tableWrappers.forEach((wrapper, index) => {
+                const original = originalStyles[index];
+                wrapper.style.maxHeight = original.maxHeight;
+                wrapper.style.overflow = original.overflow;
+                wrapper.style.height = original.height;
+            });
+        });
+    }, 100);
+}
         function exportToImage() {
     // Store original table styles
     const tableWrappers = document.querySelectorAll('.table-wrapper');
